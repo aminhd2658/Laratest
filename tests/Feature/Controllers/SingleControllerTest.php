@@ -12,9 +12,6 @@ class SingleControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * A basic feature test example.
-     */
     public function testIndexMethod(): void
     {
         //$this->withoutExceptionHandling();
