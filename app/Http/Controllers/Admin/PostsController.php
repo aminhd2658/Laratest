@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\PostRequest;
 use App\Models\Post;
 use App\Models\Tag;
-use Illuminate\Http\Request;
 
 class PostsController extends Controller
 {
@@ -30,7 +30,7 @@ class PostsController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(PostRequest $request)
     {
         $post = auth()->user()->posts()->create([
             'title' => $request->input('title'),
@@ -57,7 +57,7 @@ class PostsController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Post $post)
+    public function update(PostRequest $request, Post $post)
     {
         $post->update([
             'title' => $request->input('title'),
@@ -76,6 +76,11 @@ class PostsController extends Controller
      */
     public function destroy(Post $post)
     {
-        //
+        $post->delete();
+        $post->comments()->delete();
+        $post->tags()->detach();
+
+        return redirect()->route('post.index')
+            ->with('message', 'The post has been deleted.');
     }
 }

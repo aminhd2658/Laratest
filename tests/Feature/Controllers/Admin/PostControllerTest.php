@@ -135,4 +135,129 @@ class PostControllerTest extends TestCase
             request()->route()->middleware()
         );
     }
+
+    public function testValidationRequestRequiredData()
+    {
+        $user = User::factory()->admin()->create();
+        $data = [];
+        $errors = [
+            'title' => 'The title field is required.',
+            'description' => 'The description field is required.',
+            'image' => 'The image field is required.',
+            'tags' => 'The tags field is required.'
+        ];
+
+        //Store
+        $this->actingAs($user)
+            ->post(route('post.store'), $data)
+            ->assertSessionHasErrors($errors);
+
+        //Update
+        $this->actingAs($user)
+            ->patch(route('post.update', Post::factory()->create()->id), $data)
+            ->assertSessionHasErrors($errors);
+    }
+
+    public function testValidationRequestDescriptionDataHasMinimumRule()
+    {
+        $user = User::factory()->admin()->create();
+        $data = [
+            'description' => 'Amin',
+        ];
+        $errors = [
+            'description' => 'The description field must be at least 5 characters.',
+        ];
+
+        //Store
+        $this->actingAs($user)
+            ->post(route('post.store'), $data)
+            ->assertSessionHasErrors($errors);
+
+        //Update
+        $this->actingAs($user)
+            ->patch(route('post.update', Post::factory()->create()->id), $data)
+            ->assertSessionHasErrors($errors);
+    }
+
+    public function testValidationRequestImageDataHasUrlRule()
+    {
+        $user = User::factory()->admin()->create();
+        $data = [
+            'image' => 'aminhd',
+        ];
+        $errors = [
+            'image' => 'The image field must be a valid URL.',
+        ];
+
+        //Store
+        $this->actingAs($user)
+            ->post(route('post.store'), $data)
+            ->assertSessionHasErrors($errors);
+
+        //Update
+        $this->actingAs($user)
+            ->patch(route('post.update', Post::factory()->create()->id), $data)
+            ->assertSessionHasErrors($errors);
+    }
+
+    public function testValidationRequestTagsDataHasArrayRule()
+    {
+        $user = User::factory()->admin()->create();
+        $data = [
+            'tags' => 'aminhd',
+        ];
+        $errors = [
+            'tags' => 'The tags field must be an array.',
+        ];
+
+        //Store
+        $this->actingAs($user)
+            ->post(route('post.store'), $data)
+            ->assertSessionHasErrors($errors);
+
+        //Update
+        $this->actingAs($user)
+            ->patch(route('post.update', Post::factory()->create()->id), $data)
+            ->assertSessionHasErrors($errors);
+    }
+
+    public function testValidationRequestTagsDataMustExistsInTagsTable()
+    {
+        $user = User::factory()->admin()->create();
+        $data = [
+            'tags' => [0],
+        ];
+        $errors = [
+            'tags.0' => 'The selected tags.0 is invalid.',
+        ];
+
+        //Store
+        $this->actingAs($user)
+            ->post(route('post.store'), $data)
+            ->assertSessionHasErrors($errors);
+
+        //Update
+        $this->actingAs($user)
+            ->patch(route('post.update', Post::factory()->create()->id), $data)
+            ->assertSessionHasErrors($errors);
+    }
+
+    public function testDestroyMethod()
+    {
+        $post = Post::factory()->hasTags(5)->hasComments(2)->create();
+        $comment = $post->comments()->first();
+
+        $this
+            ->actingAs(User::factory()->admin()->create())
+            ->delete(route('post.destroy', $post->id))
+            ->assertSessionHas('message', 'The post has been deleted.')
+            ->assertRedirect(route('post.index'));
+
+        $this
+            ->assertDatabaseMissing('posts', $post->toArray())
+            ->assertDatabaseMissing('comments', $comment->toArray())
+            ->assertEmpty($post->tags);
+
+        $this->assertEquals(request()->route()->middleware(), $this->middlewares);
+    }
 }
